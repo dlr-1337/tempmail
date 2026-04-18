@@ -158,17 +158,108 @@ Acknowledged but deferred. Not in current roadmap.
 
 ## Traceability
 
-Filled by `gsd-roadmapper` when ROADMAP.md is created.
+Filled by `gsd-roadmapper` on 2026-04-18. Every v1 requirement is mapped to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Pending roadmap) | — | — |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
+| INFRA-06 | Phase 1 | Pending |
+| INFRA-07 | Phase 1 | Pending |
+| INFRA-08 | Phase 1 | Pending |
+| STORE-01 | Phase 2 | Pending |
+| STORE-02 | Phase 2 | Pending |
+| STORE-03 | Phase 2 | Pending |
+| STORE-04 | Phase 2 | Pending |
+| CORE-01 | Phase 3 | Pending |
+| CORE-02 | Phase 3 | Pending |
+| CORE-03 | Phase 3 | Pending |
+| CORE-04 | Phase 3 | Pending |
+| CORE-05 | Phase 3 | Pending |
+| SMTP-01 | Phase 4 | Pending |
+| SMTP-02 | Phase 4 | Pending |
+| SMTP-03 | Phase 4 | Pending |
+| SMTP-04 | Phase 4 | Pending |
+| SMTP-05 | Phase 4 | Pending |
+| SMTP-06 | Phase 4 | Pending |
+| SMTP-07 | Phase 4 | Pending |
+| SMTP-08 | Phase 4 | Pending |
+| SMTP-09 | Phase 4 | Pending |
+| API-01 | Phase 5 | Pending |
+| API-02 | Phase 5 | Pending |
+| API-03 | Phase 5 | Pending |
+| API-04 | Phase 5 | Pending |
+| API-05 | Phase 5 | Pending |
+| API-06 | Phase 5 | Pending |
+| API-07 | Phase 5 | Pending |
+| API-08 | Phase 5 | Pending |
+| API-09 | Phase 5 | Pending |
+| API-10 | Phase 5 | Pending |
+| API-11 | Phase 5 | Pending |
+| RT-01 | Phase 5 | Pending |
+| RT-02 | Phase 5 | Pending |
+| RT-03 | Phase 5 | Pending |
+| RETN-01 | Phase 6 | Pending |
+| RETN-02 | Phase 6 | Pending |
+| RETN-03 | Phase 6 | Pending |
+| RETN-04 | Phase 6 | Pending |
+| ABUSE-01 | Phase 6 | Pending |
+| ABUSE-02 | Phase 6 | Pending |
+| ABUSE-03 | Phase 6 | Pending |
+| ABUSE-04 | Phase 6 | Pending |
+| ABUSE-05 | Phase 6 | Pending |
+| UI-01 | Phase 7 | Pending |
+| UI-02 | Phase 7 | Pending |
+| UI-03 | Phase 7 | Pending |
+| UI-04 | Phase 7 | Pending |
+| UI-05 | Phase 7 | Pending |
+| UI-06 | Phase 7 | Pending |
+| UI-07 | Phase 7 | Pending |
+| UI-08 | Phase 7 | Pending |
+| UI-09 | Phase 7 | Pending |
+| UI-10 | Phase 7 | Pending |
+| UI-11 | Phase 7 | Pending |
+| UI-12 | Phase 7 | Pending |
+| UI-13 | Phase 7 | Pending |
+| DEPLOY-01 | Phase 8 | Pending |
+| DEPLOY-02 | Phase 8 | Pending |
+| DEPLOY-03 | Phase 8 | Pending |
+| DEPLOY-04 | Phase 8 | Pending |
+| DEPLOY-05 | Phase 8 | Pending |
+| DEPLOY-06 | Phase 8 | Pending |
+| DEPLOY-07 | Phase 8 | Pending |
+| VAL-01 | Phase 9 | Pending |
+| VAL-02 | Phase 9 | Pending |
+| VAL-03 | Phase 9 | Pending |
+| VAL-04 | Phase 9 | Pending |
+| VAL-05 | Phase 9 | Pending |
+| VAL-06 | Phase 9 | Pending |
+| VAL-07 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 73 total
-- Mapped to phases: 0 (pending)
-- Unmapped: 73 ⚠️ (will be 0 after roadmap step)
+- v1 requirements: 76 total (actual count from checkbox enumeration; the earlier "73" was an arithmetic error)
+- Mapped to phases: 76
+- Unmapped: 0
+- Duplicated across phases: 0
+
+### Coverage by Phase
+
+| Phase | Requirements | Count |
+|-------|--------------|-------|
+| Phase 1: Infrastructure & DNS Readiness | INFRA-01..08 | 8 |
+| Phase 2: Storage Layer | STORE-01..04 | 4 |
+| Phase 3: Core Domain Logic | CORE-01..05 | 5 |
+| Phase 4: SMTP Ingestion | SMTP-01..09 | 9 |
+| Phase 5: HTTP API + SSE | API-01..11, RT-01..03 | 14 |
+| Phase 6: Retention Sweeper & Abuse Hardening | RETN-01..04, ABUSE-01..05 | 9 |
+| Phase 7: Frontend (SvelteKit Static) | UI-01..13 | 13 |
+| Phase 8: Deployment (Docker Compose + Caddy) | DEPLOY-01..07 | 7 |
+| Phase 9: End-to-End Validation & Launch | VAL-01..07 | 7 |
+| **Total** | — | **76** |
 
 ---
 *Requirements defined: 2026-04-18*
-*Last updated: 2026-04-18 after initial definition*
+*Traceability mapped: 2026-04-18 by gsd-roadmapper*
