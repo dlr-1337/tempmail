@@ -87,10 +87,9 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyIns
       // @fastify/rate-limit's errorResponseBuilder returned `{error:{code,message}}`
       // as the thrown error object. Re-serialize that envelope verbatim so the
       // client sees the canonical shape (D-24 + D-20).
-      const body =
-        e.error && e.error.code
-          ? { error: { code: e.error.code, message: e.error.message ?? 'rate_limited' } }
-          : { error: { code: 'rate_limited', message: 'too many requests' } };
+      const body = e.error?.code
+        ? { error: { code: e.error.code, message: e.error.message ?? 'rate_limited' } }
+        : { error: { code: 'rate_limited', message: 'too many requests' } };
       return reply.status(429).send(body);
     }
     deps.logger?.error({ err }, 'unhandled');
