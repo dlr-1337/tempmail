@@ -66,8 +66,12 @@ export interface HttpServerDeps {
 }
 
 export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyInstance> {
+  // Fastify 5's logger option rejects an already-constructed pino instance in
+  // some versions. We use `deps.logger` for our own route-level logging (e.g.
+  // admin blocklist events) and leave Fastify's built-in request logger off —
+  // request logs are emitted explicitly where we need them.
   const app = fastify({
-    logger: deps.logger ?? false,
+    logger: false,
     trustProxy: deps.config.trustProxy ?? true,
     bodyLimit: 1024 * 1024,
   }).withTypeProvider<ZodTypeProvider>();

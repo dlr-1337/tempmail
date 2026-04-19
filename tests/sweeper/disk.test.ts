@@ -106,9 +106,7 @@ describe('disk watermark (06-04 / RETN-04)', () => {
       await failing.sweeper.runOnce('disk');
       await failing.sweeper.runOnce('disk');
       expect(failing.sweeper.diskState().status).toBe('normal');
-      const warns = failing.captured.filter(
-        (e) => e.obj.event === 'sweeper.disk.probe_failed',
-      );
+      const warns = failing.captured.filter((e) => e.obj.event === 'sweeper.disk.probe_failed');
       expect(warns.length).toBe(1);
     } finally {
       await failing.sweeper.stop();

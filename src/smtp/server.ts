@@ -140,9 +140,7 @@ export async function createSmtpServer(deps: SmtpServerDeps): Promise<SmtpServer
             remoteIp: session.remoteAddress,
             startedAtMs: now(),
           });
-          const err = new Error(
-            '452 4.3.1 Insufficient system storage',
-          ) as SMTPResponseError;
+          const err = new Error('452 4.3.1 Insufficient system storage') as SMTPResponseError;
           err.responseCode = 452;
           cb(err);
         });

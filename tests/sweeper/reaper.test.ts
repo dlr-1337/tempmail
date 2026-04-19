@@ -53,8 +53,20 @@ describe('orphan reaper (06-03 / RETN-03)', () => {
       headers: {},
       sizeBytes: 100,
       attachments: [
-        { filename: 'a.bin', contentType: 'application/octet-stream', size: 13, sha256: shaKept1, path: shardPath(shaKept1) },
-        { filename: 'b.bin', contentType: 'application/octet-stream', size: 13, sha256: shaKept2, path: shardPath(shaKept2) },
+        {
+          filename: 'a.bin',
+          contentType: 'application/octet-stream',
+          size: 13,
+          sha256: shaKept1,
+          path: shardPath(shaKept1),
+        },
+        {
+          filename: 'b.bin',
+          contentType: 'application/octet-stream',
+          size: 13,
+          sha256: shaKept2,
+          path: shardPath(shaKept2),
+        },
       ],
     });
     expect(res.ok).toBe(true);
@@ -88,7 +100,13 @@ describe('orphan reaper (06-03 / RETN-03)', () => {
       headers: {},
       sizeBytes: 10,
       attachments: [
-        { filename: 'k.bin', contentType: 'application/octet-stream', size: 9, sha256: shaKept, path: shardPath(shaKept) },
+        {
+          filename: 'k.bin',
+          contentType: 'application/octet-stream',
+          size: 9,
+          sha256: shaKept,
+          path: shardPath(shaKept),
+        },
       ],
     });
 

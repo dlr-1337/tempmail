@@ -24,12 +24,7 @@ import type { AttachmentStore } from '../attachments/index.js';
 import type { CoreApi } from '../core/index.js';
 import type { Repos } from '../db/repos/index.js';
 import { nowMs } from '../util/now.js';
-import {
-  type DiskProbe,
-  type DiskState,
-  type StatfsFn,
-  createDiskProbe,
-} from './disk.js';
+import { type DiskProbe, type DiskState, type StatfsFn, createDiskProbe } from './disk.js';
 import { type ExpireResult, runExpireSweep } from './expire.js';
 import { type ReaperResult, runOrphanReaper } from './reaper.js';
 
