@@ -114,4 +114,27 @@ describe('inboxRepo (STORE-04)', () => {
     const expired = repos.inboxes.listExpired(3500, 10);
     expect(expired.map((r) => r.local_part)).toEqual(['lp1', 'lp2', 'lp3']);
   });
+
+  it('listExpired also returns rows whose hard_expires_at <= cutoff (RETN-01 hard cap)', () => {
+    const { repos } = openTestDbWithRepos();
+    // Fresh idle TTL (sliding bump kept expires_at 10min out) but the hard
+    // ceiling has already elapsed. Sweeper must still pick this row up.
+    repos.inboxes.createInbox({
+      local_part: 'hard-expired',
+      domain: 'd.test',
+      view_token_hash: 'h',
+      expires_at: 10_000_000, // far future sliding TTL
+      hard_expires_at: 500, // already past
+    });
+    // Sibling row with neither clock tripped — must NOT be returned.
+    repos.inboxes.createInbox({
+      local_part: 'fresh',
+      domain: 'd.test',
+      view_token_hash: 'h',
+      expires_at: 10_000_000,
+      hard_expires_at: 10_000_000,
+    });
+    const expired = repos.inboxes.listExpired(1000, 10);
+    expect(expired.map((r) => r.local_part)).toEqual(['hard-expired']);
+  });
 });

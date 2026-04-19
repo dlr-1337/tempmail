@@ -35,8 +35,13 @@ export interface InboxRepo {
    *  Returns true if a row was deleted, false otherwise. Does NOT touch disk. */
   deleteInbox(id: string): boolean;
 
-  /** Returns inbox rows whose `expires_at < cutoff`, up to `limit`.
-   *  Used by the retention sweeper (Phase 6). */
+  /** Returns inbox rows whose `expires_at <= cutoff` OR `hard_expires_at <= cutoff`,
+   *  up to `limit`, oldest first. Used by the retention sweeper (Phase 6).
+   *
+   *  Hard-cap semantics matter here: an inbox with recent activity still has
+   *  a sliding `expires_at` bumped forward, but its `hard_expires_at` never
+   *  moves. The sweeper MUST expire such inboxes once the hard ceiling
+   *  passes, even if the idle clock was just reset. */
   listExpired(cutoff: number, limit: number): readonly InboxRow[];
 }
 
@@ -72,11 +77,14 @@ export function createInboxRepo(db: Db): InboxRepo {
 
   const deleteStmt = db.prepare<[string]>('DELETE FROM inboxes WHERE id = ?');
 
-  const listExpiredStmt = db.prepare<[number, number], InboxRow>(`
+  // Honors BOTH the sliding idle TTL (`expires_at`) AND the hard ceiling
+  // (`hard_expires_at`). `<=` rather than `<` so an inbox whose TTL elapses
+  // exactly on the tick boundary is picked up on this tick rather than next.
+  const listExpiredStmt = db.prepare<[number, number, number], InboxRow>(`
     SELECT id, local_part, domain, view_token_hash,
            created_at, last_activity_at, expires_at, hard_expires_at
     FROM inboxes
-    WHERE expires_at < ?
+    WHERE expires_at <= ? OR hard_expires_at <= ?
     ORDER BY expires_at ASC
     LIMIT ?
   `);
@@ -129,7 +137,8 @@ export function createInboxRepo(db: Db): InboxRepo {
     },
 
     listExpired(cutoff, limit) {
-      return listExpiredStmt.all(cutoff, limit);
+      // Cutoff is passed twice — once for each OR branch in the WHERE clause.
+      return listExpiredStmt.all(cutoff, cutoff, limit);
     },
   };
 }
