@@ -1,0 +1,37 @@
+{
+  "name": "tempmail-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "tempmail frontend — SvelteKit 2 + Svelte 5 static SPA",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "lucide-svelte": "^0.454.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.6",
+    "@sveltejs/kit": "^2.8.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0-beta.4",
+    "@testing-library/svelte": "^5.2.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "autoprefixer": "^10.4.20",
+    "jsdom": "^25.0.1",
+    "svelte": "^5.1.9",
+    "svelte-check": "^4.0.5",
+    "tailwindcss": "^4.0.0-beta.4",
+    "tslib": "^2.8.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  }
+}

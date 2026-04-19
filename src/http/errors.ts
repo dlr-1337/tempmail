@@ -15,6 +15,8 @@ export const HTTP_ERROR_CODES = {
   rate_limited: 'rate_limited',
   invalid_request: 'invalid_request',
   server_error: 'server_error',
+  /** Phase 6 RETN-04: disk watermark critical → 503 on inbox mint. */
+  unavailable: 'unavailable',
 } as const;
 
 export type HttpErrorCode = (typeof HTTP_ERROR_CODES)[keyof typeof HTTP_ERROR_CODES];
@@ -30,6 +32,7 @@ const CODE_TO_STATUS: Record<HttpErrorCode, number> = {
   rate_limited: 429,
   invalid_request: 400,
   server_error: 500,
+  unavailable: 503,
 };
 
 export function sendError(reply: FastifyReply, code: HttpErrorCode, message: string): FastifyReply {

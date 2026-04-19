@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { CoreApi } from '../../core/index.js';
+import type { DiskState } from '../../sweeper/index.js';
 import { sendError } from '../errors.js';
 import { cookieNameFor, viewTokenCookieOptions } from '../plugins/auth.js';
 import { inboxIdParam } from '../schemas.js';
@@ -18,6 +19,8 @@ import { inboxIdParam } from '../schemas.js';
 export interface InboxRoutesDeps {
   core: CoreApi;
   hardTtlMs: number;
+  /** Phase 6 RETN-04: when state is `critical`, POST /api/inbox returns 503. */
+  diskState?: () => DiskState;
 }
 
 export async function registerInboxRoutes(
@@ -38,6 +41,15 @@ export async function registerInboxRoutes(
       },
     },
     async (_req, reply) => {
+      // Phase 6 RETN-04: disk critical → 503. The SMTP side blocks DATA at
+      // the high watermark; we block new mints only at critical so an
+      // already-busy box keeps draining inbound rather than piling up.
+      if (deps.diskState) {
+        const d = deps.diskState();
+        if (d.status === 'critical') {
+          return sendError(reply, 'unavailable', 'service temporarily unavailable');
+        }
+      }
       const result = deps.core.createInbox();
       reply.setCookie(
         cookieNameFor(result.inboxId),

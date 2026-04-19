@@ -24,14 +24,23 @@ import {
 import type pino from 'pino';
 import type { AttachmentStore } from '../attachments/index.js';
 import type { CoreApi } from '../core/index.js';
+import type { DiskState } from '../sweeper/index.js';
 import { sendError } from './errors.js';
 import { authPlugin } from './plugins/auth.js';
 import { registerHelmet } from './plugins/helmet.js';
 import { registerRateLimit } from './plugins/rate-limit.js';
+import { registerAdminRoutes } from './routes/admin.js';
 import { registerAttachmentRoutes } from './routes/attachments.js';
 import { registerInboxRoutes } from './routes/inbox.js';
 import { registerMessageRoutes } from './routes/messages.js';
 import { registerStreamRoute } from './routes/stream.js';
+
+export interface HttpAdminConfig {
+  /** When true, POST /admin/blocklist is registered (loopback-only). */
+  enabled: boolean;
+  /** Salt for hashing inbox ids in log lines. Defaults to a random-at-boot salt. */
+  logSalt?: string;
+}
 
 export interface HttpServerConfig {
   /** Signing secret for @fastify/cookie. View-tokens are NOT signed. */
@@ -40,6 +49,8 @@ export interface HttpServerConfig {
   hardTtlMs: number;
   /** Trust X-Forwarded-* headers (behind Caddy). Default true. */
   trustProxy?: boolean;
+  /** Phase 6 ABUSE-02: enable the loopback-only admin endpoint. */
+  admin?: HttpAdminConfig;
 }
 
 export interface HttpServerDeps {
@@ -47,6 +58,11 @@ export interface HttpServerDeps {
   attachmentStore: AttachmentStore;
   config: HttpServerConfig;
   logger?: pino.Logger;
+  /**
+   * Phase 6 RETN-04 hook. When present, GET /healthz reflects the current
+   * disk state and POST /api/inbox returns 503 once `status === 'critical'`.
+   */
+  diskState?: () => DiskState;
 }
 
 export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyInstance> {
@@ -64,12 +80,34 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyIns
   await app.register(authPlugin, { core: deps.core, cookieSecret: deps.config.cookieSecret });
   await app.register(sensible);
 
-  app.get('/healthz', { config: { rateLimit: false } }, async () => ({ ok: true }));
+  // Phase 6 RETN-04 / D-16: healthz reflects disk state when provided but
+  // NEVER 5xxs — circuit breaker reports, doesn't fail.
+  app.get('/healthz', { config: { rateLimit: false } }, async () => {
+    if (!deps.diskState) return { ok: true };
+    const d = deps.diskState();
+    const degraded = d.status !== 'normal';
+    return {
+      status: degraded ? 'degraded' : 'ok',
+      disk: { percentUsed: d.percentUsed, status: d.status },
+    };
+  });
 
-  await registerInboxRoutes(app, { core: deps.core, hardTtlMs: deps.config.hardTtlMs });
+  await registerInboxRoutes(app, {
+    core: deps.core,
+    hardTtlMs: deps.config.hardTtlMs,
+    diskState: deps.diskState,
+  });
   await registerMessageRoutes(app, { core: deps.core });
   await registerAttachmentRoutes(app, { core: deps.core, attachmentStore: deps.attachmentStore });
   await registerStreamRoute(app, { core: deps.core });
+
+  if (deps.config.admin?.enabled) {
+    await registerAdminRoutes(app, {
+      core: deps.core,
+      logger: deps.logger,
+      logSalt: deps.config.admin.logSalt ?? 'default-admin-salt',
+    });
+  }
 
   // Centralized error handler — unrecognized errors + zod validation failures
   // both land here. Validation errors carry `.validation` on the error object;

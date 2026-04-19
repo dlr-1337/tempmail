@@ -47,6 +47,12 @@ export interface SmtpServerDeps {
   logger: SmtpPinoLike;
   /** Injectable clock for determinism in tests. Defaults to `nowMs`. */
   now?: () => number;
+  /**
+   * Phase 6 RETN-04 hook. When provided and returns `false`, the SMTP adapter
+   * rejects DATA with `452 4.3.1 Insufficient system storage`. Queried once
+   * per DATA phase so a transient probe failure doesn't flap a single session.
+   */
+  isAcceptingMail?: () => boolean;
 }
 
 export interface SmtpServerHandle {
@@ -120,6 +126,28 @@ export async function createSmtpServer(deps: SmtpServerDeps): Promise<SmtpServer
       onRcptTo(address, session, cb);
     },
     onData(stream: SMTPServerDataStream, session: SMTPServerSession, cb) {
+      // Phase 6 RETN-04: disk watermark circuit breaker. When the attachment
+      // volume crosses the high watermark, reject DATA with a 452 so legit
+      // senders queue-and-retry instead of bouncing. Rate-limit log line
+      // reuses the PII-safe shape (smtp_code=452). We also drain the stream
+      // to keep smtp-server happy before invoking the callback.
+      if (deps.isAcceptingMail && !deps.isAcceptingMail()) {
+        stream.on('data', () => {
+          /* drain */
+        });
+        stream.on('end', () => {
+          smtpLog.rateLimited({
+            remoteIp: session.remoteAddress,
+            startedAtMs: now(),
+          });
+          const err = new Error(
+            '452 4.3.1 Insufficient system storage',
+          ) as SMTPResponseError;
+          err.responseCode = 452;
+          cb(err);
+        });
+        return;
+      }
       onData(stream, session, cb);
     },
   };
