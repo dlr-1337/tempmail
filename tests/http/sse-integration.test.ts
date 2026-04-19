@@ -127,6 +127,17 @@ describe('GET /api/inbox/:id/stream (SSE real listen)', () => {
   });
 
   it('Last-Event-ID skips already-delivered messages on reconnect', async () => {
+    // Close this test's rig and rebuild with a monotonic injected clock so
+    // two ingests land on distinct receivedAt values (real Date.now() can
+    // tie on a fast machine).
+    await rig.close();
+    let t = 1_000_000;
+    rig = await buildTestRig({ now: () => (t += 100) });
+    await rig.app.listen({ host: '127.0.0.1', port: 0 });
+    const address2 = rig.app.server.address();
+    if (!address2 || typeof address2 === 'string') throw new Error('no port');
+    baseUrl = `http://127.0.0.1:${address2.port}`;
+
     const inbox = rig.core.createInbox();
     rig.core.ingestMessage({
       envelopeTo: inbox.address,

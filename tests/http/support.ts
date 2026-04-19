@@ -28,6 +28,9 @@ export interface BuildTestRigOptions {
   /** If true (default), awaits `app.ready()`. Set false when the test needs
    *  to attach additional routes before boot. */
   ready?: boolean;
+  /** Inject a deterministic clock into Core. Handy when an SSE test needs
+   *  two ingests to land on distinct `receivedAt` values reliably. */
+  now?: () => number;
 }
 
 export async function buildTestRig(opts: BuildTestRigOptions = {}): Promise<TestRig> {
@@ -39,6 +42,7 @@ export async function buildTestRig(opts: BuildTestRigOptions = {}): Promise<Test
     repos,
     attachmentStore,
     config: { domain: 'example.test', idleTtlMs: 10 * 60_000, hardTtlMs: 60 * 60_000 },
+    now: opts.now,
   });
   const app = await createHttpServer({
     core,
