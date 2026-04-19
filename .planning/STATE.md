@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-19T14:13:15.097Z"
+status: in-progress
+last_updated: "2026-04-18T11:20:00.000Z"
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 0
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State: Tempmail
 
-**Last updated:** 2026-04-18 (03-02 plan complete)
+**Last updated:** 2026-04-18 (03-03 plan complete)
 
 ## Project Reference
 
@@ -21,14 +21,14 @@ progress:
 
 **What This Is:** Public, anonymous, self-hosted, receive-only disposable email. One Node 22 process running the MX (smtp-server), HTTP API (Fastify), in-process event bus (EventEmitter), and sweeper; SQLite (WAL) + disk-sharded attachments; Caddy reverse proxy; SvelteKit static frontend; Docker Compose deploy. Single VPS, $0 recurring beyond VPS + domain.
 
-**Current Focus:** Phase 3 (core domain logic) execution. Plans 03-01 (event bus) and 03-02 (inboxes) complete on `gsd/phase-02-storage-layer`. Plans 03-03 (messages) and 03-04 (composition root) are planned and queued.
+**Current Focus:** Phase 3 (core domain logic) execution. Plans 03-01 (event bus), 03-02 (inboxes), and 03-03 (messages) complete on `gsd/phase-02-storage-layer`. Plan 03-04 (composition root) is planned and queued.
 
 ## Current Position
 
 **Phase:** 3 (core domain logic) — in progress
-**Plan:** 03-02 complete; 03-03 (messages) is next
-**Status:** Phase 3 mid-execution (2 of 4 plans done)
-**Progress:** `██░░░░░░░ 2 / 9 phases` (Phase 3 at 2/4 plans)
+**Plan:** 03-03 complete; 03-04 (composition root) is next
+**Status:** Phase 3 mid-execution (3 of 4 plans done)
+**Progress:** `██░░░░░░░ 2 / 9 phases` (Phase 3 at 3/4 plans)
 
 ## Performance Metrics
 
@@ -38,10 +38,11 @@ progress:
 | Requirements mapped | 76 / 76 | 100% |
 | Launch-blockers in v1 | All | per PITFALLS.md |
 | Parallel windows | 2 | Phase 4∥5, Phase 5∥7 |
-| Phases completed | 0 | Phase 3 at 2/4 plans (03-01, 03-02) |
-| Plans completed in Phase 3 | 2 / 4 | 03-01 event bus, 03-02 inboxes |
-| Tests passing (cumulative) | 66 | 57 pre-03-02 + 9 new in 03-02 |
+| Phases completed | 0 | Phase 3 at 3/4 plans (03-01, 03-02, 03-03) |
+| Plans completed in Phase 3 | 3 / 4 | 03-01 event bus, 03-02 inboxes, 03-03 messages |
+| Tests passing (cumulative) | 90 | 66 pre-03-03 + 24 new in 03-03 |
 | Plan 03-02 duration | ~20 min | createInbox + expireInbox + 9 cases |
+| Plan 03-03 duration | ~20 min | ingestMessage + listMessages + 24 cases |
 
 ## Accumulated Context
 
@@ -57,10 +58,17 @@ progress:
 - **Retention: 10 min idle, 1 hr hard ceiling:** All research streams agree. Locked unless operator overrides.
 - **Domain is a first-class column from day one:** v1 ships one domain; data model supports rotation without migration.
 
+### Plan 03-03 Decisions (messages)
+
+- **D-11 emit-after-commit locked into implementation:** the repo's synchronous `withTransaction` returns only after COMMIT; `bus.emit` is textually (and therefore execution-order) AFTER the insert return. A subscriber that re-queries via the repos in its listener is guaranteed to see the new row — proved by test 1.
+- **D-15 wrong-token → forbidden:** `listMessages` reuses the standalone `verifyViewToken` from plan 03-02 — single source of truth, no re-implementation drift. Wrong token returns `forbidden`, NEVER `not_found`, to prevent enumeration.
+- **AttachmentView locked to {id, filename, contentType, size}:** no `sha256`, no `storage_path`, no body strings — enforced by a string-serialization test that asserts those substrings do not appear anywhere in the response JSON. Bodies are returned by the single-message endpoint (Phase 5 API-04), not by the list view.
+- **Envelope parser is stricter than RFC 5321:** no quoted local-parts, no source routes — core layer can afford strictness because the SMTP adapter (Phase 4) is already filtering. Malformed envelope → `invalid_envelope` result, no throw.
+- **Defensive attachment reject (D-14):** regex `^[0-9a-f]{64}$` + non-empty path, enforced before DB contact and before bus emit. Uppercase hex, wrong-length, non-hex chars, and empty paths all trip the `invalid_attachment` branch.
+
 ### Current Todos
 
-- [ ] Execute plan 03-03 (messages — ingestMessage + listMessages, bus emit after commit).
-- [ ] Execute plan 03-04 (composition root — createCore(deps) wiring).
+- [ ] Execute plan 03-04 (composition root — createCore(deps) wiring). Prereqs (03-01 bus, 03-02 inboxes + `verifyViewToken`, 03-03 messages) all landed.
 - [ ] Collect operator input for Phase 1 (see Open Questions below) — still outstanding, blocks Phase 1 deployment work but not Phase 3 code.
 
 ### Known Blockers
@@ -84,7 +92,9 @@ Source: PROJECT.md Key Decisions + research/SUMMARY.md "Open Questions Pending O
 
 ## Session Continuity
 
-**Next session entry point:** Execute plan 03-03 (messages) — the next sequential plan in Phase 3. Prereqs (03-01 bus, 03-02 inboxes + standalone `verifyViewToken` export) are in place on `gsd/phase-02-storage-layer`. Afterward: plan 03-04 (composition root).
+**Last session:** 2026-04-18T11:20Z — Completed 03-03-PLAN-messages.md. No blockers.
+
+**Next session entry point:** Execute plan 03-04 (composition root) — the last sequential plan in Phase 3. Prereqs (03-01 bus, 03-02 inboxes + standalone `verifyViewToken` export, 03-03 messages factory) are in place on `gsd/phase-02-storage-layer`. Afterward: Phase 4 (SMTP adapter) and Phase 5 (HTTP + SSE) can run in parallel.
 
 **To resume from scratch:** read `.planning/ROADMAP.md` (phase structure + success criteria), `.planning/REQUIREMENTS.md` (traceability table), then this file for current position.
 

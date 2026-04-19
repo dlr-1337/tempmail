@@ -251,7 +251,7 @@ Every v1 requirement ID from INFRA-01 through VAL-07 appears in exactly one phas
 |-------|----------------|--------|-----------|
 | 1. Infrastructure & DNS Readiness | 0/0 | Not started | - |
 | 2. Storage Layer | 0/0 | Not started | - |
-| 3. Core Domain Logic | 0/0 | Not started | - |
+| 3. Core Domain Logic | 3/4 | In progress | - |
 | 4. SMTP Ingestion | 0/0 | Not started | - |
 | 5. HTTP API + SSE | 0/0 | Not started | - |
 | 6. Retention Sweeper & Abuse Hardening | 0/0 | Not started | - |
