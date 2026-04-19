@@ -14,6 +14,7 @@
 import type { AttachmentStore } from '../attachments/index.js';
 import type { Db } from '../db/client.js';
 import type { Repos } from '../db/repos/index.js';
+import { type AbuseApi, createAbuse } from './abuse.js';
 import { type Bus, createBus } from './bus.js';
 import { type InboxesApi, createInboxes } from './inboxes.js';
 import { type MessagesApi, createMessages } from './messages.js';
@@ -43,8 +44,29 @@ export interface CoreApi {
   readonly bus: Bus;
   createInbox: InboxesApi['createInbox'];
   expireInbox: InboxesApi['expireInbox'];
+  /**
+   * Protocol-agnostic inbox lookup for external adapters.
+   *
+   * Added per Phase 4 CONTEXT D-15: the SMTP layer must not import repos or
+   * db types directly, so Core exposes a neutral read-only helper the
+   * `onRcptTo` handler can call before accepting a recipient.
+   */
+  findInboxByAddress: InboxesApi['findInboxByAddress'];
+  /**
+   * Phase 5 API-02: read-only metadata view for GET /api/inbox/:id. Returns
+   * message count via a single COUNT(*) aggregate; no bodies leak.
+   */
+  getInbox: InboxesApi['getInbox'];
+  /** Phase 5 auth plugin: cheap inbox-exists + view-token compare. */
+  verifyInboxAccess: InboxesApi['verifyInboxAccess'];
   ingestMessage: MessagesApi['ingestMessage'];
   listMessages: MessagesApi['listMessages'];
+  /** Phase 5 API-04: single-message read (bodies + attachment metadata). */
+  getMessage: MessagesApi['getMessage'];
+  /** Phase 5 API-08: attachment lookup scoped to an inbox (ownership check). */
+  getAttachmentForInbox: MessagesApi['getAttachmentForInbox'];
+  /** Phase 5 D-20: record 429 / abuse events into abuse_counters. */
+  recordAbuse: AbuseApi['recordAbuse'];
 }
 
 /**
@@ -78,21 +100,44 @@ export function createCore(deps: CoreDeps): CoreApi {
     },
     now: deps.now,
   });
+  const abuse = createAbuse({ repos: deps.repos, now: deps.now });
 
   return {
     bus,
     createInbox: inboxes.createInbox,
     expireInbox: inboxes.expireInbox,
+    findInboxByAddress: inboxes.findInboxByAddress,
+    getInbox: inboxes.getInbox,
+    verifyInboxAccess: inboxes.verifyInboxAccess,
     ingestMessage: messages.ingestMessage,
     listMessages: messages.listMessages,
+    getMessage: messages.getMessage,
+    getAttachmentForInbox: messages.getAttachmentForInbox,
+    recordAbuse: abuse.recordAbuse,
   };
 }
 
 // Re-exports so callers only need to import from 'src/core/index.js'.
+export type { AbuseApi, RecordAbuseInput } from './abuse.js';
+export { ABUSE_WINDOW_MS, currentAbuseWindow } from './abuse.js';
 export type { Bus, BusEvents, MessageEvent } from './bus.js';
-export type { CreateInboxResult, ExpireInboxResult, InboxesApi } from './inboxes.js';
 export type {
+  CreateInboxResult,
+  ExpireInboxResult,
+  GetInboxResult,
+  InboxAddressView,
+  InboxView,
+  InboxesApi,
+  VerifyInboxAccessResult,
+} from './inboxes.js';
+export type {
+  AttachmentDescriptor,
   AttachmentView,
+  FullMessageView,
+  GetAttachmentForInboxInput,
+  GetAttachmentResult,
+  GetMessageInput,
+  GetMessageResult,
   IngestAttachmentInput,
   IngestInput,
   IngestResult,

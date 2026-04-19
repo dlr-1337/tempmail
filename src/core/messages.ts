@@ -108,9 +108,71 @@ export type ListMessagesResult =
   | { ok: true; messages: readonly MessageView[] }
   | { ok: false; reason: 'not_found' | 'forbidden' };
 
+/**
+ * Full message projection for `GET /api/inbox/:id/messages/:msgId` (API-04).
+ * Includes the text and HTML bodies — the list view (MessageView) deliberately
+ * omits them.
+ */
+export interface FullMessageView {
+  id: string;
+  receivedAt: number;
+  sender: string | null;
+  subject: string | null;
+  textBody: string | null;
+  htmlBody: string | null;
+  sizeBytes: number;
+  attachments: readonly AttachmentView[];
+}
+
+export interface GetMessageInput {
+  inboxId: string;
+  messageId: string;
+  viewToken: string;
+}
+
+export type GetMessageResult =
+  | { ok: true; message: FullMessageView }
+  | { ok: false; reason: 'not_found' | 'forbidden' };
+
+/**
+ * Attachment descriptor handed to the HTTP attachment-download route.
+ * The `sha256` here is the KEY the attachment store uses to locate bytes on
+ * disk — the HTTP layer forwards it to `attachmentStore.readAttachment(sha)`
+ * but NEVER returns it to the client.
+ */
+export interface AttachmentDescriptor {
+  id: string;
+  sha256: string;
+  filename: string | null;
+  contentType: string | null;
+  size: number;
+}
+
+export interface GetAttachmentForInboxInput {
+  inboxId: string;
+  attachmentId: string;
+  viewToken: string;
+}
+
+export type GetAttachmentResult =
+  | { ok: true; attachment: AttachmentDescriptor }
+  | { ok: false; reason: 'not_found' | 'forbidden' };
+
 export interface MessagesApi {
   ingestMessage(input: IngestInput): IngestResult;
   listMessages(input: ListMessagesInput): ListMessagesResult;
+  /**
+   * Single-message endpoint (API-04). Enforces the same view-token check as
+   * listMessages. Cross-inbox access returns `not_found` (never leaks that
+   * the message exists elsewhere).
+   */
+  getMessage(input: GetMessageInput): GetMessageResult;
+  /**
+   * Attachment lookup scoped to an inbox (API-08 pre-flight). Walks
+   * attachment → message → inbox and enforces ownership. Returns the
+   * storage key (sha256) only to the HTTP layer for `readAttachment`.
+   */
+  getAttachmentForInbox(input: GetAttachmentForInboxInput): GetAttachmentResult;
 }
 
 /**
@@ -253,5 +315,65 @@ export function createMessages(deps: MessagesDeps): MessagesApi {
     return { ok: true, messages };
   };
 
-  return { ingestMessage, listMessages };
+  const getMessage = (input: GetMessageInput): GetMessageResult => {
+    const inboxRow = deps.repos.inboxes.findInboxById(input.inboxId);
+    if (!inboxRow) return { ok: false, reason: 'not_found' };
+    if (!verifyViewToken(inboxRow, input.viewToken)) {
+      return { ok: false, reason: 'forbidden' };
+    }
+    const msg = deps.repos.messages.findMessageById(input.messageId);
+    if (!msg || msg.inbox_id !== input.inboxId) {
+      // Cross-inbox access or unknown message → 'not_found' — matches the
+      // same privacy posture as listMessages: never reveals that another
+      // inbox holds the id.
+      return { ok: false, reason: 'not_found' };
+    }
+    const attachments: AttachmentView[] = deps.repos.attachments
+      .listAttachmentsByMessage(msg.id)
+      .map((a) => ({
+        id: a.id,
+        filename: a.filename,
+        contentType: a.content_type,
+        size: a.size_bytes,
+      }));
+    return {
+      ok: true,
+      message: {
+        id: msg.id,
+        receivedAt: msg.received_at,
+        sender: msg.sender,
+        subject: msg.subject,
+        textBody: msg.text_body,
+        htmlBody: msg.html_body_sanitized,
+        sizeBytes: msg.size_bytes,
+        attachments,
+      },
+    };
+  };
+
+  const getAttachmentForInbox = (input: GetAttachmentForInboxInput): GetAttachmentResult => {
+    const inboxRow = deps.repos.inboxes.findInboxById(input.inboxId);
+    if (!inboxRow) return { ok: false, reason: 'not_found' };
+    if (!verifyViewToken(inboxRow, input.viewToken)) {
+      return { ok: false, reason: 'forbidden' };
+    }
+    const att = deps.repos.attachments.findAttachmentById(input.attachmentId);
+    if (!att) return { ok: false, reason: 'not_found' };
+    const msg = deps.repos.messages.findMessageById(att.message_id);
+    if (!msg || msg.inbox_id !== input.inboxId) {
+      return { ok: false, reason: 'not_found' };
+    }
+    return {
+      ok: true,
+      attachment: {
+        id: att.id,
+        sha256: att.sha256,
+        filename: att.filename,
+        contentType: att.content_type,
+        size: att.size_bytes,
+      },
+    };
+  };
+
+  return { ingestMessage, listMessages, getMessage, getAttachmentForInbox };
 }

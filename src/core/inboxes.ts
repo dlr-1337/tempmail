@@ -61,10 +61,61 @@ export type ExpireInboxResult =
   | { ok: true; deletedMessages: number; unlinkedAttachments: number }
   | { ok: false; reason: 'not_found' };
 
+/**
+ * Neutral, protocol-agnostic view of an inbox row — handed to the SMTP
+ * adapter (Phase 4) for RCPT TO lookup. Deliberately narrower than
+ * `InboxRow`: no view-token hash, no timestamps the adapter doesn't need.
+ *
+ * Added per Phase 4 CONTEXT D-15 / D-03: SMTP must not import repo or db
+ * types, so Core exposes a tiny passthrough that returns a minimal shape.
+ */
+export interface InboxAddressView {
+  id: string;
+  localPart: string;
+  domain: string;
+}
+
+/**
+ * Rich read model for `GET /api/inbox/:id` (Phase 5 API-02). All fields are
+ * derived from columns + a COUNT(*) aggregate; nothing leaks the view-token
+ * hash or the storage_path of any attachment.
+ */
+export interface InboxView {
+  inboxId: string;
+  address: string;
+  createdAt: number;
+  lastActivityAt: number;
+  expiresAt: number;
+  hardExpiresAt: number;
+  messageCount: number;
+}
+
+export type GetInboxResult = { ok: true; inbox: InboxView } | { ok: false; reason: 'not_found' };
+
+export type VerifyInboxAccessResult =
+  | { ok: true; row: InboxRow }
+  | { ok: false; reason: 'not_found' | 'forbidden' };
+
 export interface InboxesApi {
   createInbox(): CreateInboxResult;
   expireInbox(input: { inboxId: string }): Promise<ExpireInboxResult>;
   verifyViewToken(row: InboxRow, viewToken: string): boolean;
+  /** Lookup by address tuple. Returns `null` when not found — NEVER throws.
+   *  Consumed by the SMTP `onRcptTo` handler to decide 550 vs accept. */
+  findInboxByAddress(localPart: string, domain: string): InboxAddressView | null;
+  /**
+   * Read-only view for GET /api/inbox/:id (Phase 5 API-02). Includes a
+   * COUNT(*) of associated messages. Returns `not_found` if the inbox row
+   * is missing; never distinguishes expired vs missing (enumeration-safe).
+   */
+  getInbox(inboxId: string): GetInboxResult;
+  /**
+   * Combined existence + view-token check used by the HTTP auth plugin.
+   * `not_found` if the inbox is missing; `forbidden` if the token doesn't
+   * match. Order matters: we always report `not_found` before any token
+   * check, so the HTTP layer can decide 401/403/404 without re-querying.
+   */
+  verifyInboxAccess(inboxId: string, viewToken: string): VerifyInboxAccessResult;
 }
 
 /**
@@ -174,9 +225,43 @@ export function createInboxes(deps: InboxesDeps): InboxesApi {
     return { ok: true, deletedMessages, unlinkedAttachments };
   };
 
+  const findInboxByAddress = (localPart: string, domain: string): InboxAddressView | null => {
+    const row = deps.repos.inboxes.findInboxByLocalPart(localPart, domain);
+    if (!row) return null;
+    return { id: row.id, localPart: row.local_part, domain: row.domain };
+  };
+
+  const getInbox = (inboxId: string): GetInboxResult => {
+    const row = deps.repos.inboxes.findInboxById(inboxId);
+    if (!row) return { ok: false, reason: 'not_found' };
+    const messageCount = deps.repos.messages.countMessagesByInbox(inboxId);
+    return {
+      ok: true,
+      inbox: {
+        inboxId: row.id,
+        address: `${row.local_part}@${row.domain}`,
+        createdAt: row.created_at,
+        lastActivityAt: row.last_activity_at,
+        expiresAt: row.expires_at,
+        hardExpiresAt: row.hard_expires_at,
+        messageCount,
+      },
+    };
+  };
+
+  const verifyInboxAccess = (inboxId: string, viewToken: string): VerifyInboxAccessResult => {
+    const row = deps.repos.inboxes.findInboxById(inboxId);
+    if (!row) return { ok: false, reason: 'not_found' };
+    if (!verifyViewToken(row, viewToken)) return { ok: false, reason: 'forbidden' };
+    return { ok: true, row };
+  };
+
   return {
     createInbox,
     expireInbox,
     verifyViewToken,
+    findInboxByAddress,
+    getInbox,
+    verifyInboxAccess,
   };
 }
