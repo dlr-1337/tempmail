@@ -1,0 +1,73 @@
+# =============================================================================
+# tempmail production compose (Phase 8, D-06..D-08).
+#
+# One-command deploy: `docker compose up -d`.
+#
+# Topology:
+#
+#   host :25  ──► app (smtp-server, 0.0.0.0:25 inside container)
+#   host :80  ──┐
+#   host :443 ──┴─► caddy ──► app:8080 (HTTP loopback via compose network)
+#                        └── /srv/web (static SPA, bind-mounted from ./web/build)
+#
+#   Persisted:
+#     data          — SQLite DB + WAL + attachments (app writes /data)
+#     caddy_data    — ACME state, issued certs, key material
+#     caddy_config  — Caddy's internal runtime config cache
+# =============================================================================
+
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tempmail:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Provide sane defaults the image expects. Everything else comes from .env.
+      HTTP_PORT: "8080"
+      HTTP_HOST: "0.0.0.0"
+      SMTP_PORT: "25"
+      SMTP_HOST: "0.0.0.0"
+      DATA_DIR: "/data"
+      NODE_ENV: "production"
+    # Prod binding: host :25 -> container :25. The local override flips this.
+    ports:
+      - "25:25"
+    volumes:
+      - data:/data
+    # Healthcheck is baked into the image (curl /healthz). We rely on it.
+    networks:
+      - tempmail
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Consumed via {$DOMAIN} / {$LETS_ENCRYPT_EMAIL} inside the Caddyfile.
+      DOMAIN: "${DOMAIN}"
+      LETS_ENCRYPT_EMAIL: "${LETS_ENCRYPT_EMAIL}"
+    volumes:
+      - ./ops/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web/build:/srv/web:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - tempmail
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  tempmail:
+    driver: bridge

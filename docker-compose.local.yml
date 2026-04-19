@@ -1,0 +1,39 @@
+# =============================================================================
+# tempmail LOCAL override (Phase 8, D-20).
+#
+# Purpose: let a developer run the full stack on their laptop with no domain,
+# no real DNS, no Let's Encrypt. Pair with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up
+#
+# What changes vs prod:
+#   - SMTP published on host :2525 (unprivileged port; avoids conflict with
+#     any local MTA or with the production :25 binding).
+#   - Caddy serves tempmail.local with a self-signed cert (`tls internal`).
+#   - DOMAIN / LETS_ENCRYPT_EMAIL defaulted so you can skip touching .env
+#     beyond generating PII_LOG_SALT + COOKIE_SECRET.
+#
+# Add `127.0.0.1 tempmail.local` to your hosts file before browsing. See
+# ops/DEV.md for the full walkthrough.
+# =============================================================================
+
+services:
+
+  app:
+    environment:
+      DOMAIN: "tempmail.local"
+      TLS_DEV_SELF_SIGNED: "true"
+      ADMIN_ENABLED: "false"
+    # Override the port mapping: host 2525 -> container 25.
+    ports: !override
+      - "2525:25"
+
+  caddy:
+    environment:
+      DOMAIN: "tempmail.local"
+      LETS_ENCRYPT_EMAIL: "dev@tempmail.local"
+    volumes:
+      - ./ops/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - ./web/build:/srv/web:ro
+      - caddy_data:/data
+      - caddy_config:/config

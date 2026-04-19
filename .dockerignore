@@ -1,0 +1,52 @@
+# --- Version control ---
+.git
+.gitignore
+.gitattributes
+
+# --- Editor / OS ---
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# --- Project planning (never shipped) ---
+.planning
+CLAUDE.md
+
+# --- Node build outputs + deps (stages install their own) ---
+node_modules
+dist
+*.tsbuildinfo
+coverage
+web/node_modules
+web/.svelte-kit
+web/build
+
+# --- Local runtime data ---
+data
+*.db
+*.db-wal
+*.db-shm
+
+# --- Secrets / env ---
+.env
+.env.local
+.env.*.local
+
+# --- Tests (runtime image doesn't need them) ---
+tests
+web/tests
+vitest.config.ts
+web/vitest.setup.ts
+web/vite.config.ts
+
+# --- Ops docs + scripts (live at host level, not in image) ---
+ops
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# --- Logs / misc ---
+*.log
+npm-debug.log*
+.cache

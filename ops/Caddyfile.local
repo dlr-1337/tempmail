@@ -1,0 +1,55 @@
+# =============================================================================
+# tempmail LOCAL Caddyfile (Phase 8, D-20).
+#
+# Self-signed TLS via Caddy's internal CA — no Let's Encrypt, no public DNS.
+# Paired with `docker-compose.local.yml`. Add `127.0.0.1 tempmail.local` to
+# your hosts file before testing.
+#
+# Same security headers + SSE handling as prod — this is the environment
+# where you catch CSP / SSE regressions before they hit production.
+# =============================================================================
+
+{
+	# Disable the auto-https redirect noise from Caddy when running with a
+	# self-signed CA. Local devs who accept the cert once get the full
+	# experience; not worth fighting the redirect in an internal-only stack.
+	auto_https disable_redirects
+}
+
+tempmail.local {
+	tls internal
+
+	encode zstd gzip
+
+	reverse_proxy /api/* app:8080 {
+		flush_interval -1
+		transport http {
+			read_timeout 0s
+			write_timeout 0s
+		}
+	}
+
+	reverse_proxy /healthz app:8080
+
+	root * /srv/web
+	try_files {path} /index.html
+	file_server
+
+	@immutable path /_app/immutable/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	@html path /*.html
+	header @html Cache-Control "no-cache"
+
+	header {
+		# Weaker HSTS locally so you can switch hosts entries without being
+		# stuck in a months-long STS pin.
+		Strict-Transport-Security "max-age=300"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Content-Security-Policy "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src data: blob:; base-uri 'self'; form-action 'none'; frame-ancestors 'none';"
+		-Server
+	}
+}

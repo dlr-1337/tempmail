@@ -1,0 +1,64 @@
+# =============================================================================
+# tempmail systemd unit (Phase 8, D-12).
+#
+# For operators on a <1GB VPS where Docker overhead is unwelcome. Pair with
+# `caddy.service` (or the upstream Caddy package unit). See ops/systemd/README.md
+# for the step-by-step install.
+#
+# Install path: /etc/systemd/system/tempmail.service
+# Enable:       systemctl daemon-reload && systemctl enable --now tempmail
+# =============================================================================
+
+[Unit]
+Description=tempmail (self-hosted disposable email)
+Documentation=https://github.com/your-org/tempmail
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tempmail
+Group=tempmail
+WorkingDirectory=/opt/tempmail
+ExecStart=/usr/bin/node --enable-source-maps dist/main.js
+
+# Environment: load secrets + tunables from a file the root-only /etc partition.
+# .env.example in the repo shows the full schema.
+EnvironmentFile=/etc/tempmail/env
+
+# Grant the non-root `tempmail` user the single capability it needs — bind
+# port 25. Cleaner than setcap on the node binary and scoped to this service.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Hardening — defensive defaults that cost nothing.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+# node requires W+X for JIT
+
+# Writable paths — SQLite DB + attachments + any operator-supplied TLS cert.
+ReadWritePaths=/var/lib/tempmail
+
+# Restart policy. `on-failure` (not `always`) so a config-error crash shows
+# up in journal and doesn't loop silently.
+Restart=on-failure
+RestartSec=5s
+
+# Graceful shutdown window. Matches SHUTDOWN_GRACE_MS in src/main.ts.
+TimeoutStopSec=35s
+KillSignal=SIGTERM
+
+# Logging to journal (systemd captures stdout/stderr automatically).
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

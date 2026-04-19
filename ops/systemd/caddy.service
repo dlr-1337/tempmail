@@ -1,0 +1,33 @@
+# =============================================================================
+# Upstream Caddy systemd unit (reference copy).
+#
+# On Debian / Ubuntu the `caddy` apt package ships its own, correctly-scoped
+# unit at /lib/systemd/system/caddy.service. PREFER that. This file exists so
+# an operator who installs Caddy manually (binary from caddyserver.com/download)
+# has a working unit to copy.
+#
+# Source: https://github.com/caddyserver/dist/blob/master/init/caddy.service
+# =============================================================================
+
+[Unit]
+Description=Caddy
+Documentation=https://caddyserver.com/docs/
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=14400
+StartLimitBurst=10
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+ExecStart=/usr/bin/caddy run --environ --config /etc/caddy/Caddyfile
+ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --force
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

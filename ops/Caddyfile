@@ -1,0 +1,66 @@
+# =============================================================================
+# tempmail production Caddyfile (Phase 8, D-10 / D-11).
+#
+# Caddy terminates TLS via Let's Encrypt (HTTP-01 challenge on :80, so your
+# firewall must permit :80 inbound even though we 301 everything to :443 by
+# default). It reverse-proxies /api/* and /healthz to the app container and
+# serves the SvelteKit build from /srv/web with SPA fallback.
+#
+# `flush_interval -1` is THE SSE escape hatch — without it Caddy buffers and
+# the `data: {...}\n\n` event frames stall at the proxy.
+# =============================================================================
+
+{
+	# Operator email for Let's Encrypt renewal notices. Sourced from the
+	# compose env (see docker-compose.yml `caddy.environment`).
+	email {$LETS_ENCRYPT_EMAIL}
+}
+
+{$DOMAIN} {
+
+	encode zstd gzip
+
+	# --- API + SSE -----------------------------------------------------------
+	# /api/stream/:id is SSE. flush_interval -1 disables response buffering
+	# for this entire handler block — safe because the other /api/* routes
+	# are short JSON responses that don't benefit from buffering anyway.
+	reverse_proxy /api/* app:8080 {
+		flush_interval -1
+		transport http {
+			read_timeout 0s
+			write_timeout 0s
+		}
+	}
+
+	# --- Healthz (public monitoring endpoint) --------------------------------
+	# Safe to expose: returns `{status, disk}` with no PII. Useful for uptime
+	# monitors or a load-balancer probe in a multi-node setup.
+	reverse_proxy /healthz app:8080
+
+	# NOTE: /admin/* is DELIBERATELY NOT ROUTED. The admin endpoint is
+	# loopback-only by design (see src/http/routes/admin.ts). Expose it only
+	# via `ssh operator@host && curl http://127.0.0.1:8080/admin/...`.
+
+	# --- Static SPA with fallback --------------------------------------------
+	root * /srv/web
+	try_files {path} /index.html
+	file_server
+
+	# --- Cache policy --------------------------------------------------------
+	@immutable path /_app/immutable/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	@html path /*.html
+	header @html Cache-Control "no-cache"
+
+	# --- Security headers ----------------------------------------------------
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Content-Security-Policy "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src data: blob:; base-uri 'self'; form-action 'none'; frame-ancestors 'none';"
+		-Server
+	}
+}
