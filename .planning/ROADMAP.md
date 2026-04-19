@@ -24,7 +24,7 @@ Both windows are optional; sequential execution is also valid. The executor shou
 
 - [ ] **Phase 1: Infrastructure & DNS Readiness** - Domain, VPS, and DNS correctly configured so the internet can deliver mail to our MX
 - [ ] **Phase 2: Storage Layer** - SQLite schema + WAL + attachment directory scheme that every later phase writes through
-- [ ] **Phase 3: Core Domain Logic** - Protocol-agnostic business rules (createInbox, ingestMessage, listMessages, expireInbox) + event bus
+- [x] **Phase 3: Core Domain Logic** - Protocol-agnostic business rules (createInbox, ingestMessage, listMessages, expireInbox) + event bus
 - [ ] **Phase 4: SMTP Ingestion** - Inbound MX on port 25 with size caps, catch-all disabled, STARTTLS, PII-minimizing logs
 - [ ] **Phase 5: HTTP API + SSE** - Fastify routes, view-token cookie auth, rate limits, SSE with replay-on-subscribe
 - [ ] **Phase 6: Retention Sweeper & Abuse Hardening** - Expiry sweeper, disk circuit breaker, per-IP abuse controls, fail2ban jails
@@ -251,7 +251,7 @@ Every v1 requirement ID from INFRA-01 through VAL-07 appears in exactly one phas
 |-------|----------------|--------|-----------|
 | 1. Infrastructure & DNS Readiness | 0/0 | Not started | - |
 | 2. Storage Layer | 0/0 | Not started | - |
-| 3. Core Domain Logic | 3/4 | In progress | - |
+| 3. Core Domain Logic | 4/4 | Complete | 2026-04-18 |
 | 4. SMTP Ingestion | 0/0 | Not started | - |
 | 5. HTTP API + SSE | 0/0 | Not started | - |
 | 6. Retention Sweeper & Abuse Hardening | 0/0 | Not started | - |

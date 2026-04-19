@@ -174,11 +174,11 @@ Filled by `gsd-roadmapper` on 2026-04-18. Every v1 requirement is mapped to exac
 | STORE-02 | Phase 2 | Pending |
 | STORE-03 | Phase 2 | Pending |
 | STORE-04 | Phase 2 | Pending |
-| CORE-01 | Phase 3 | Complete (plan 03-02) |
-| CORE-02 | Phase 3 | Complete (plan 03-02) |
-| CORE-03 | Phase 3 | Complete (plan 03-03) |
-| CORE-04 | Phase 3 | Complete (plan 03-03) |
-| CORE-05 | Phase 3 | Complete (plan 03-02) |
+| CORE-01 | Phase 3 | Complete (plan 03-02; surfaced through createCore in plan 03-04) |
+| CORE-02 | Phase 3 | Complete (plan 03-02; surfaced through createCore in plan 03-04) |
+| CORE-03 | Phase 3 | Complete (plan 03-03; surfaced through createCore in plan 03-04) |
+| CORE-04 | Phase 3 | Complete (plan 03-03; surfaced through createCore in plan 03-04) |
+| CORE-05 | Phase 3 | Complete (plan 03-02; surfaced through createCore in plan 03-04) |
 | SMTP-01 | Phase 4 | Pending |
 | SMTP-02 | Phase 4 | Pending |
 | SMTP-03 | Phase 4 | Pending |
