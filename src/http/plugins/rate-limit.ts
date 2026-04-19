@@ -51,6 +51,8 @@ export async function registerRateLimit(app: FastifyInstance, deps: RateLimitDep
     max: 120,
     timeWindow: '1 minute',
     errorResponseBuilder: (_req, context) => ({
+      statusCode: 429,
+      code: 'FST_ERR_RATE_LIMIT',
       error: {
         code: 'rate_limited',
         message: `too many requests (retry after ${context.after})`,

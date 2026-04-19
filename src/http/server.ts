@@ -73,15 +73,25 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyIns
 
   // Centralized error handler — unrecognized errors + zod validation failures
   // both land here. Validation errors carry `.validation` on the error object;
-  // everything else is bucketed as a 500.
+  // rate-limit throws an error whose shape was built by errorResponseBuilder.
   app.setErrorHandler((err, _req, reply) => {
-    if ((err as { validation?: unknown }).validation) {
+    const e = err as {
+      validation?: unknown;
+      statusCode?: number;
+      error?: { code?: string; message?: string };
+    };
+    if (e.validation) {
       return sendError(reply, 'invalid_request', 'invalid request');
     }
-    if ((err as { statusCode?: number }).statusCode === 429) {
-      // @fastify/rate-limit throws with statusCode=429; its errorResponseBuilder
-      // already built the body — just preserve status.
-      return reply.status(429).send(err);
+    if (e.statusCode === 429) {
+      // @fastify/rate-limit's errorResponseBuilder returned `{error:{code,message}}`
+      // as the thrown error object. Re-serialize that envelope verbatim so the
+      // client sees the canonical shape (D-24 + D-20).
+      const body =
+        e.error && e.error.code
+          ? { error: { code: e.error.code, message: e.error.message ?? 'rate_limited' } }
+          : { error: { code: 'rate_limited', message: 'too many requests' } };
+      return reply.status(429).send(body);
     }
     deps.logger?.error({ err }, 'unhandled');
     return sendError(reply, 'server_error', 'internal error');
