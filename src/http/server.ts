@@ -31,6 +31,7 @@ import { registerRateLimit } from './plugins/rate-limit.js';
 import { registerAttachmentRoutes } from './routes/attachments.js';
 import { registerInboxRoutes } from './routes/inbox.js';
 import { registerMessageRoutes } from './routes/messages.js';
+import { registerStreamRoute } from './routes/stream.js';
 
 export interface HttpServerConfig {
   /** Signing secret for @fastify/cookie. View-tokens are NOT signed. */
@@ -68,6 +69,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyIns
   await registerInboxRoutes(app, { core: deps.core, hardTtlMs: deps.config.hardTtlMs });
   await registerMessageRoutes(app, { core: deps.core });
   await registerAttachmentRoutes(app, { core: deps.core, attachmentStore: deps.attachmentStore });
+  await registerStreamRoute(app, { core: deps.core });
 
   // Centralized error handler — unrecognized errors + zod validation failures
   // both land here. Validation errors carry `.validation` on the error object;
