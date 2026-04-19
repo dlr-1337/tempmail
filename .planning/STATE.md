@@ -1,6 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
+last_updated: "2026-04-19T14:13:15.097Z"
+progress:
+  total_phases: 9
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 7
+---
+
 # Project State: Tempmail
 
-**Last updated:** 2026-04-18
+**Last updated:** 2026-04-18 (03-02 plan complete)
 
 ## Project Reference
 
@@ -8,14 +21,14 @@
 
 **What This Is:** Public, anonymous, self-hosted, receive-only disposable email. One Node 22 process running the MX (smtp-server), HTTP API (Fastify), in-process event bus (EventEmitter), and sweeper; SQLite (WAL) + disk-sharded attachments; Caddy reverse proxy; SvelteKit static frontend; Docker Compose deploy. Single VPS, $0 recurring beyond VPS + domain.
 
-**Current Focus:** Roadmap complete; awaiting `/gsd-plan-phase 1` to begin execution planning. Phase 1 execution is blocked on operator input (see Open Questions).
+**Current Focus:** Phase 3 (core domain logic) execution. Plans 03-01 (event bus) and 03-02 (inboxes) complete on `gsd/phase-02-storage-layer`. Plans 03-03 (messages) and 03-04 (composition root) are planned and queued.
 
 ## Current Position
 
-**Phase:** 0 (pre-phase; roadmap freshly minted)
-**Plan:** —
-**Status:** Awaiting phase-1 planning
-**Progress:** `░░░░░░░░░ 0 / 9 phases`
+**Phase:** 3 (core domain logic) — in progress
+**Plan:** 03-02 complete; 03-03 (messages) is next
+**Status:** Phase 3 mid-execution (2 of 4 plans done)
+**Progress:** `██░░░░░░░ 2 / 9 phases` (Phase 3 at 2/4 plans)
 
 ## Performance Metrics
 
@@ -25,7 +38,10 @@
 | Requirements mapped | 76 / 76 | 100% |
 | Launch-blockers in v1 | All | per PITFALLS.md |
 | Parallel windows | 2 | Phase 4∥5, Phase 5∥7 |
-| Phases completed | 0 | — |
+| Phases completed | 0 | Phase 3 at 2/4 plans (03-01, 03-02) |
+| Plans completed in Phase 3 | 2 / 4 | 03-01 event bus, 03-02 inboxes |
+| Tests passing (cumulative) | 66 | 57 pre-03-02 + 9 new in 03-02 |
+| Plan 03-02 duration | ~20 min | createInbox + expireInbox + 9 cases |
 
 ## Accumulated Context
 
@@ -43,8 +59,9 @@
 
 ### Current Todos
 
-- [ ] Collect operator input for Phase 1 (see Open Questions below).
-- [ ] Run `/gsd-plan-phase 1` once operator inputs are gathered — or plan Phase 2 first if operator wants to unblock storage/core work in parallel.
+- [ ] Execute plan 03-03 (messages — ingestMessage + listMessages, bus emit after commit).
+- [ ] Execute plan 03-04 (composition root — createCore(deps) wiring).
+- [ ] Collect operator input for Phase 1 (see Open Questions below) — still outstanding, blocks Phase 1 deployment work but not Phase 3 code.
 
 ### Known Blockers
 
@@ -67,11 +84,12 @@ Source: PROJECT.md Key Decisions + research/SUMMARY.md "Open Questions Pending O
 
 ## Session Continuity
 
-**Next session entry point:** `/gsd-plan-phase 1` (after operator input on Q1–Q4) OR `/gsd-plan-phase 2` if operator wants to start storage work in parallel with DNS setup.
+**Next session entry point:** Execute plan 03-03 (messages) — the next sequential plan in Phase 3. Prereqs (03-01 bus, 03-02 inboxes + standalone `verifyViewToken` export) are in place on `gsd/phase-02-storage-layer`. Afterward: plan 03-04 (composition root).
 
 **To resume from scratch:** read `.planning/ROADMAP.md` (phase structure + success criteria), `.planning/REQUIREMENTS.md` (traceability table), then this file for current position.
 
 **Artifacts written by roadmapper:**
+
 - `.planning/ROADMAP.md` — nine phases, 76/76 requirements mapped
 - `.planning/STATE.md` — this file
 - `.planning/REQUIREMENTS.md` — traceability section updated with phase mappings

@@ -27,11 +27,11 @@ Requirements for the initial public-launch release. Each maps to roadmap phases.
 
 ### Core Domain (CORE)
 
-- [ ] **CORE-01**: `createInbox()` generates a random local-part with ≥64 bits of entropy (nanoid 16-char base32 or stronger)
-- [ ] **CORE-02**: Each inbox has a separate view-token distinct from its public address
+- [x] **CORE-01**: `createInbox()` generates a random local-part with ≥64 bits of entropy (nanoid 16-char base32 or stronger)
+- [x] **CORE-02**: Each inbox has a separate view-token distinct from its public address
 - [ ] **CORE-03**: `ingestMessage()` writes message + attachments transactionally and emits an in-process event
 - [ ] **CORE-04**: `listMessages()` returns chronological messages for a given inbox + view-token
-- [ ] **CORE-05**: `expireInbox()` cascades deletes to messages + attachment files + abuse counters
+- [x] **CORE-05**: `expireInbox()` cascades deletes to messages + attachment files + abuse counters
 
 ### SMTP Ingestion (SMTP)
 
@@ -174,11 +174,11 @@ Filled by `gsd-roadmapper` on 2026-04-18. Every v1 requirement is mapped to exac
 | STORE-02 | Phase 2 | Pending |
 | STORE-03 | Phase 2 | Pending |
 | STORE-04 | Phase 2 | Pending |
-| CORE-01 | Phase 3 | Pending |
-| CORE-02 | Phase 3 | Pending |
+| CORE-01 | Phase 3 | Complete (plan 03-02) |
+| CORE-02 | Phase 3 | Complete (plan 03-02) |
 | CORE-03 | Phase 3 | Pending |
 | CORE-04 | Phase 3 | Pending |
-| CORE-05 | Phase 3 | Pending |
+| CORE-05 | Phase 3 | Complete (plan 03-02) |
 | SMTP-01 | Phase 4 | Pending |
 | SMTP-02 | Phase 4 | Pending |
 | SMTP-03 | Phase 4 | Pending |
