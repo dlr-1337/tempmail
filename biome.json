@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": ["node_modules", "dist", "data", "coverage", "*.tsbuildinfo"]
+    "ignore": ["node_modules", "dist", "data", "coverage", "*.tsbuildinfo", ".planning"]
   },
   "formatter": {
     "enabled": true,
