@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test output
+coverage/
+
+# Runtime data (SQLite DB + WAL + SHM + attachments)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/attachments/
+
+# Env
+.env
+.env.local
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.log
