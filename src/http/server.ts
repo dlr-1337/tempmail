@@ -28,6 +28,7 @@ import { sendError } from './errors.js';
 import { authPlugin } from './plugins/auth.js';
 import { registerHelmet } from './plugins/helmet.js';
 import { registerRateLimit } from './plugins/rate-limit.js';
+import { registerInboxRoutes } from './routes/inbox.js';
 
 export interface HttpServerConfig {
   /** Signing secret for @fastify/cookie. View-tokens are NOT signed. */
@@ -61,6 +62,8 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<FastifyIns
   await app.register(sensible);
 
   app.get('/healthz', { config: { rateLimit: false } }, async () => ({ ok: true }));
+
+  await registerInboxRoutes(app, { core: deps.core, hardTtlMs: deps.config.hardTtlMs });
 
   // Centralized error handler — unrecognized errors + zod validation failures
   // both land here. Validation errors carry `.validation` on the error object;
