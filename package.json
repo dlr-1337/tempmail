@@ -19,16 +19,29 @@
     "check:fix": "biome check --write ."
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/sensible": "^6.0.4",
     "better-sqlite3": "^12.9.0",
+    "fastify": "^5.8.5",
+    "fastify-type-provider-zod": "^4.0.2",
+    "isomorphic-dompurify": "^2.36.0",
+    "mailparser": "^3.9.8",
     "nanoid": "^5.0.0",
-    "pino": "^9.0.0"
+    "pino": "^9.0.0",
+    "smtp-server": "^3.18.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@types/better-sqlite3": "^7.6.0",
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.6.0",
+    "undici": "^7.25.0",
     "vitest": "^2.0.0"
   }
 }
