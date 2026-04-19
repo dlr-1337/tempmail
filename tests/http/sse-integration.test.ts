@@ -132,7 +132,11 @@ describe('GET /api/inbox/:id/stream (SSE real listen)', () => {
     // tie on a fast machine).
     await rig.close();
     let t = 1_000_000;
-    rig = await buildTestRig({ now: () => (t += 100) });
+    const tick = (): number => {
+      t += 100;
+      return t;
+    };
+    rig = await buildTestRig({ now: tick });
     await rig.app.listen({ host: '127.0.0.1', port: 0 });
     const address2 = rig.app.server.address();
     if (!address2 || typeof address2 === 'string') throw new Error('no port');
